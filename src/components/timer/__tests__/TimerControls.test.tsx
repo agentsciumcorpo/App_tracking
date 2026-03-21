@@ -2,10 +2,19 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TimerControls } from '../TimerControls'
+import type { Project } from '../../../types'
+
+const mockProjects: Project[] = [
+  { id: 'p1', user_id: 'u1', name: 'Projet A', color: 'blue', created_at: '2026-01-01T00:00:00Z' },
+  { id: 'p2', user_id: 'u1', name: 'Projet B', color: 'red', created_at: '2026-01-02T00:00:00Z' },
+]
 
 const defaultProps = {
   taskName: '',
   onTaskNameChange: vi.fn(),
+  projects: mockProjects,
+  selectedProjectId: null as string | null,
+  onProjectChange: vi.fn(),
   isRunning: false,
   onStart: vi.fn(),
   onStop: vi.fn(),
@@ -66,5 +75,22 @@ describe('TimerControls', () => {
   it('has maxLength attribute on input', () => {
     render(<TimerControls {...defaultProps} />)
     expect(screen.getByPlaceholderText('Nom de la tâche...')).toHaveAttribute('maxlength', '200')
+  })
+
+  it('renders project selector', () => {
+    render(<TimerControls {...defaultProps} />)
+    expect(screen.getByText('Sélectionner un projet...')).toBeInTheDocument()
+  })
+
+  it('shows project options', () => {
+    render(<TimerControls {...defaultProps} />)
+    expect(screen.getByText('Projet A')).toBeInTheDocument()
+    expect(screen.getByText('Projet B')).toBeInTheDocument()
+  })
+
+  it('disables project selector when running', () => {
+    render(<TimerControls {...defaultProps} isRunning={true} selectedProjectId="p1" />)
+    const select = screen.getByRole('combobox')
+    expect(select).toBeDisabled()
   })
 })

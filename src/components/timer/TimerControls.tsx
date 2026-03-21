@@ -1,8 +1,13 @@
 import { memo } from 'react'
+import type { Project } from '../../types'
+import { ProjectSelector } from '../projects/ProjectSelector'
 
 interface TimerControlsProps {
   taskName: string
   onTaskNameChange: (name: string) => void
+  projects: Project[]
+  selectedProjectId: string | null
+  onProjectChange: (projectId: string) => void
   isRunning: boolean
   onStart: () => void
   onStop: () => void
@@ -12,6 +17,9 @@ interface TimerControlsProps {
 export const TimerControls = memo(function TimerControls({
   taskName,
   onTaskNameChange,
+  projects,
+  selectedProjectId,
+  onProjectChange,
   isRunning,
   onStart,
   onStop,
@@ -34,6 +42,14 @@ export const TimerControls = memo(function TimerControls({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !isRunning) onStart()
         }}
+      />
+
+      <ProjectSelector
+        projects={projects}
+        selectedId={selectedProjectId}
+        onChange={onProjectChange}
+        disabled={isRunning}
+        hasError={!!error && !selectedProjectId && !isRunning}
       />
 
       {error && (

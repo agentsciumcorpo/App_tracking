@@ -1,14 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { logError } from '../lib/utils'
 import type { ActiveTimer } from '../types'
 
 export interface UseTimerReturn {
   taskName: string
   setTaskName: (name: string) => void
+  projectId: string | null
+  setProjectId: (id: string) => void
   isRunning: boolean
+  pendingStop: boolean
   elapsedSeconds: number
   startTimer: () => Promise<void>
-  stopTimer: () => Promise<void>
+  stopTimer: () => void
+  confirmStop: (rating?: number | null) => Promise<void>
+  cancelStop: () => void
   error: string | null
   loading: boolean
 }
@@ -16,22 +22,36 @@ export interface UseTimerReturn {
 const MAX_TASK_NAME_LENGTH = 200
 
 function userFriendlyError(raw: string): string {
-  console.error('[useTimer]', raw)
+  logError('[useTimer]', raw)
   return 'Une erreur est survenue, veuillez réessayer.'
 }
 
+function isValidRating(rating: number | null): boolean {
+  return rating === null || (Number.isInteger(rating) && rating >= 1 && rating <= 5)
+}
+
 export function useTimer(): UseTimerReturn {
+  // --- Form state ---
   const [taskName, setTaskName] = useState('')
+  const [projectId, setProjectId] = useState<string | null>(null)
+
+  // --- Timer state ---
   const [isRunning, setIsRunning] = useState(false)
+  const [pendingStop, setPendingStop] = useState(false)
   const [startedAt, setStartedAt] = useState<Date | null>(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // --- Refs ---
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const userIdRef = useRef<string | null>(null)
   const pendingRef = useRef(false)
   const activeTaskNameRef = useRef('')
+  const activeProjectIdRef = useRef<string | null>(null)
+  const stoppedAtRef = useRef<Date | null>(null)
 
+  // --- Interval management ---
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
@@ -49,7 +69,7 @@ export function useTimer(): UseTimerReturn {
     intervalRef.current = setInterval(update, 1000)
   }, [clearTimer])
 
-  // Restauration du timer au montage
+  // --- Restore active timer on mount ---
   useEffect(() => {
     let cancelled = false
 
@@ -78,6 +98,8 @@ export function useTimer(): UseTimerReturn {
         const start = new Date(data.started_at)
         setTaskName(data.task_name)
         activeTaskNameRef.current = data.task_name
+        setProjectId(data.project_id)
+        activeProjectIdRef.current = data.project_id
         setStartedAt(start)
         setIsRunning(true)
         startInterval(start)
@@ -90,7 +112,7 @@ export function useTimer(): UseTimerReturn {
     return () => { cancelled = true; clearTimer() }
   }, [startInterval, clearTimer])
 
-  // Rafraîchir le chrono au retour d'onglet
+  // --- Refresh elapsed on tab visibility ---
   useEffect(() => {
     if (!isRunning || !startedAt) return
     const onVisible = () => {
@@ -102,6 +124,7 @@ export function useTimer(): UseTimerReturn {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [isRunning, startedAt])
 
+  // --- Start ---
   const startTimer = useCallback(async () => {
     if (pendingRef.current || isRunning) return
 
@@ -114,7 +137,10 @@ export function useTimer(): UseTimerReturn {
       setError(`Le nom ne peut pas dépasser ${MAX_TASK_NAME_LENGTH} caractères`)
       return
     }
-
+    if (!projectId) {
+      setError('Veuillez sélectionner un projet')
+      return
+    }
     if (!userIdRef.current) {
       setError('Session expirée, veuillez vous reconnecter.')
       return
@@ -131,6 +157,7 @@ export function useTimer(): UseTimerReturn {
           task_name: trimmed,
           started_at: now.toISOString(),
           user_id: userIdRef.current,
+          project_id: projectId,
         })
 
       if (insertError) {
@@ -139,6 +166,7 @@ export function useTimer(): UseTimerReturn {
       }
 
       activeTaskNameRef.current = trimmed
+      activeProjectIdRef.current = projectId
       setStartedAt(now)
       setIsRunning(true)
       setElapsedSeconds(0)
@@ -146,28 +174,39 @@ export function useTimer(): UseTimerReturn {
     } finally {
       pendingRef.current = false
     }
-  }, [taskName, isRunning, startInterval])
+  }, [taskName, projectId, isRunning, startInterval])
 
-  const stopTimer = useCallback(async () => {
-    if (!startedAt || pendingRef.current) return
+  // --- Stop (visual only, shows rating modal) ---
+  const stopTimer = useCallback(() => {
+    if (!startedAt || pendingStop) return
+    clearTimer()
+    stoppedAtRef.current = new Date()
+    setIsRunning(false)
+    setPendingStop(true)
+  }, [startedAt, pendingStop, clearTimer])
 
-    if (!userIdRef.current) {
-      setError('Session expirée, veuillez vous reconnecter.')
+  // --- Confirm stop (finalize with optional rating) ---
+  const confirmStop = useCallback(async (rating: number | null = null) => {
+    if (!stoppedAtRef.current || !startedAt || pendingRef.current) return
+
+    if (!isValidRating(rating)) {
+      setError('Note invalide (1-5)')
       return
     }
 
     pendingRef.current = true
     setError(null)
-    const now = new Date()
+    const now = stoppedAtRef.current
     const durationMinutes = Math.round((now.getTime() - startedAt.getTime()) / 60000)
 
     try {
       const { error: rpcError } = await supabase.rpc('complete_timer', {
-        p_user_id: userIdRef.current,
         p_task_name: activeTaskNameRef.current,
         p_started_at: startedAt.toISOString(),
         p_ended_at: now.toISOString(),
         p_duration_minutes: durationMinutes,
+        p_project_id: activeProjectIdRef.current,
+        p_rating: rating,
       })
 
       if (rpcError) {
@@ -175,24 +214,40 @@ export function useTimer(): UseTimerReturn {
         return
       }
 
-      clearTimer()
-      setIsRunning(false)
       setStartedAt(null)
       setElapsedSeconds(0)
       setTaskName('')
       activeTaskNameRef.current = ''
+      setProjectId(null)
+      activeProjectIdRef.current = null
+      stoppedAtRef.current = null
+      setPendingStop(false)
     } finally {
       pendingRef.current = false
     }
-  }, [startedAt, clearTimer])
+  }, [startedAt])
+
+  // --- Cancel stop (resume timer) ---
+  const cancelStop = useCallback(() => {
+    if (!pendingStop || !startedAt) return
+    stoppedAtRef.current = null
+    setPendingStop(false)
+    setIsRunning(true)
+    startInterval(startedAt)
+  }, [pendingStop, startedAt, startInterval])
 
   return {
     taskName,
     setTaskName,
+    projectId,
+    setProjectId,
     isRunning,
+    pendingStop,
     elapsedSeconds,
     startTimer,
     stopTimer,
+    confirmStop,
+    cancelStop,
     error,
     loading,
   }

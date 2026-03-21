@@ -10,17 +10,18 @@ L'utilisateur DOIT pouvoir saisir un nom de tâche dans un champ texte avant de 
 - **THEN** le timer ne démarre pas et le champ est mis en évidence
 
 ### Requirement: Démarrage du chronomètre
-L'utilisateur DOIT pouvoir démarrer un chronomètre en cliquant sur un bouton Start.
+L'utilisateur DOIT pouvoir démarrer un chronomètre en saisissant un nom de tâche, sélectionnant un projet, et cliquant sur Start. Le nom DOIT être non vide et de 200 caractères maximum. Un projet DOIT être sélectionné. Un seul timer peut être actif à la fois par utilisateur.
 
-#### Scenario: Démarrage réussi
-- **WHEN** l'utilisateur a saisi un nom de tâche et clique sur Start
+#### Scenario: Démarrage réussi avec projet
+- **WHEN** l'utilisateur a saisi un nom de tâche, sélectionné un projet, et clique sur Start
 - **THEN** le chronomètre démarre et affiche le temps écoulé en temps réel
 - **THEN** le bouton Start devient un bouton Stop
 - **THEN** le champ de saisie du nom est désactivé
+- **THEN** le timer actif avec `project_id` est persisté dans `active_timers`
 
-#### Scenario: Timer persisté au démarrage
-- **WHEN** le chronomètre démarre
-- **THEN** une entrée est créée dans `active_timers` avec le nom, le `user_id` et le timestamp de début
+#### Scenario: Démarrage sans projet sélectionné
+- **WHEN** l'utilisateur saisit un nom de tâche mais ne sélectionne pas de projet
+- **THEN** le système affiche une erreur de validation et le timer ne démarre pas
 
 ### Requirement: Affichage du temps en temps réel
 Le système DOIT afficher le temps écoulé au format HH:MM:SS, mis à jour chaque seconde.
@@ -34,12 +35,17 @@ Le système DOIT afficher le temps écoulé au format HH:MM:SS, mis à jour chaq
 - **THEN** l'affichage montre 00:00:00
 
 ### Requirement: Arrêt du chronomètre
-L'utilisateur DOIT pouvoir arrêter le chronomètre en cliquant sur un bouton Stop.
+L'utilisateur DOIT pouvoir arrêter le chronomètre en cliquant sur un bouton Stop. À l'arrêt, une modale de notation s'affiche avant la finalisation de la tâche. L'utilisateur peut noter sa productivité (1-5) ou passer. La tâche est enregistrée uniquement après cette étape.
 
-#### Scenario: Arrêt et enregistrement
+#### Scenario: Arrêt et modale de notation
 - **WHEN** l'utilisateur clique sur Stop
-- **THEN** le chronomètre s'arrête
-- **THEN** la tâche est enregistrée dans `tasks` avec : nom, durée en minutes, timestamp début et fin
+- **THEN** le chronomètre s'arrête visuellement
+- **THEN** une modale de notation (1-5 étoiles) s'affiche
+- **THEN** l'utilisateur peut noter ou passer
+
+#### Scenario: Enregistrement après notation
+- **WHEN** l'utilisateur soumet une note ou passe
+- **THEN** la tâche est enregistrée dans `tasks` avec : nom, durée, timestamps, project_id, et rating (ou NULL)
 - **THEN** l'entrée dans `active_timers` est supprimée
 - **THEN** le formulaire revient à l'état initial (champ vide, bouton Start)
 
@@ -60,6 +66,7 @@ Le timer actif DOIT survivre à un rafraîchissement de la page.
 #### Scenario: Restauration après refresh
 - **WHEN** l'utilisateur rafraîchit la page alors qu'un chronomètre est en cours
 - **THEN** le chronomètre reprend automatiquement avec le temps écoulé correct calculé depuis `started_at`
+- **THEN** l'association au projet est également restaurée
 
 #### Scenario: Pas de timer actif
 - **WHEN** l'utilisateur charge la page sans timer actif dans `active_timers`
