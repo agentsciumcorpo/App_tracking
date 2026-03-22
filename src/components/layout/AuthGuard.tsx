@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { AuthPage } from '../../pages/AuthPage'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -29,12 +30,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (state === 'unauthenticated') {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-zinc-900">
-        <h1 className="text-2xl font-bold text-zinc-100">Connexion requise</h1>
-        <p className="text-zinc-400">Veuillez vous connecter pour accéder à l'application.</p>
-      </div>
-    )
+    return <AuthPage />
   }
 
   return <>{children}</>
