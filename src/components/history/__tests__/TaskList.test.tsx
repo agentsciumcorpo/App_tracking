@@ -19,32 +19,40 @@ const mockTasks: Task[] = [
   },
 ]
 
+const defaultProps = {
+  tasks: mockTasks,
+  projects: mockProjects,
+  onUpdateRating: vi.fn().mockResolvedValue(true),
+  onUpdateDuration: vi.fn().mockResolvedValue(true),
+  onDelete: vi.fn().mockResolvedValue(true),
+}
+
 describe('TaskList', () => {
   it('renders empty state when no tasks', () => {
-    render(<TaskList tasks={[]} projects={mockProjects} onUpdateRating={vi.fn()} />)
+    render(<TaskList {...defaultProps} tasks={[]} />)
     expect(screen.getByText('Aucune tâche')).toBeInTheDocument()
   })
 
   it('renders task names', () => {
-    render(<TaskList tasks={mockTasks} projects={mockProjects} onUpdateRating={vi.fn()} />)
+    render(<TaskList {...defaultProps} />)
     expect(screen.getByText('Tâche 1')).toBeInTheDocument()
     expect(screen.getByText('Tâche 2')).toBeInTheDocument()
   })
 
   it('shows "Non noté" for tasks without rating', () => {
-    render(<TaskList tasks={mockTasks} projects={mockProjects} onUpdateRating={vi.fn()} />)
+    render(<TaskList {...defaultProps} />)
     expect(screen.getByText('Non noté')).toBeInTheDocument()
   })
 
   it('shows star rating editor on click', async () => {
-    render(<TaskList tasks={mockTasks} projects={mockProjects} onUpdateRating={vi.fn()} />)
+    render(<TaskList {...defaultProps} />)
     await userEvent.click(screen.getByText('Non noté'))
     expect(screen.getAllByRole('radio')).toHaveLength(5)
   })
 
   it('calls onUpdateRating when star is clicked in edit mode', async () => {
     const onUpdateRating = vi.fn().mockResolvedValue(true)
-    render(<TaskList tasks={mockTasks} projects={mockProjects} onUpdateRating={onUpdateRating} />)
+    render(<TaskList {...defaultProps} onUpdateRating={onUpdateRating} />)
     await userEvent.click(screen.getByText('Non noté'))
     await userEvent.click(screen.getByLabelText('3 étoiles'))
     expect(onUpdateRating).toHaveBeenCalledWith('t2', 3)
