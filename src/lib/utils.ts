@@ -25,6 +25,51 @@ export function isValidRating(rating: number | null): boolean {
   return rating === null || (Number.isInteger(rating) && rating >= 1 && rating <= 5)
 }
 
+export function formatDate(isoString: string): string {
+  const d = new Date(isoString)
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${day}/${month}/${year} ${hours}:${minutes}`
+}
+
+export function isToday(isoString: string): boolean {
+  const d = new Date(isoString)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+}
+
+export function isThisWeek(isoString: string): boolean {
+  const d = new Date(isoString)
+  const now = new Date()
+  const startOfWeek = new Date(now)
+  const day = now.getDay()
+  const diff = day === 0 ? 6 : day - 1
+  startOfWeek.setDate(now.getDate() - diff)
+  startOfWeek.setHours(0, 0, 0, 0)
+  const endOfWeek = new Date(startOfWeek)
+  endOfWeek.setDate(startOfWeek.getDate() + 7)
+  return d >= startOfWeek && d < endOfWeek
+}
+
+export function getWeekRange(offset = 0): { weekStart: string; weekEnd: string; label: string } {
+  const now = new Date()
+  const day = now.getDay()
+  const diffToMonday = day === 0 ? 6 : day - 1
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - diffToMonday + offset * 7)
+  monday.setHours(0, 0, 0, 0)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+
+  const fmt = (d: Date) => d.toISOString().split('T')[0]
+  const label = offset === 0 ? 'Cette semaine' : `Semaine du ${formatDate(monday.toISOString()).split(' ')[0]}`
+
+  return { weekStart: fmt(monday), weekEnd: fmt(sunday), label }
+}
+
 export function formatTime(totalSeconds: number): string {
   if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return '00:00:00'
   const safe = Math.floor(totalSeconds)

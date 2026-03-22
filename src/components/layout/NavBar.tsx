@@ -18,6 +18,9 @@ export const NavBar = memo(function NavBar() {
       <NavLink to="/projects" className={linkClass}>
         Projets
       </NavLink>
+      <NavLink to="/analysis" className={linkClass}>
+        Analyse
+      </NavLink>
     </nav>
   )
 })

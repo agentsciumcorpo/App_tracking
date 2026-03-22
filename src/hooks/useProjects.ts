@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { logError, PROJECT_COLOR_LIST } from '../lib/utils'
+import { PROJECT_COLOR_LIST } from '../lib/utils'
+import { mapSupabaseError } from '../lib/errors'
 import type { Project, ProjectColor } from '../types'
 
 export interface UseProjectsReturn {
@@ -16,11 +17,9 @@ export interface UseProjectsReturn {
 const MAX_NAME_LENGTH = 100
 
 function userFriendlyError(raw: string): string {
-  logError('[useProjects]', raw)
-  if (raw.includes('violates foreign key constraint')) {
-    return 'Ce projet a des tâches associées. Réassignez-les avant de le supprimer.'
-  }
-  return 'Une erreur est survenue, veuillez réessayer.'
+  return mapSupabaseError('useProjects', raw, {
+    'violates foreign key constraint': 'Ce projet a des tâches associées. Réassignez-les avant de le supprimer.',
+  })
 }
 
 function isValidColor(color: string): color is ProjectColor {

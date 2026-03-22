@@ -5,6 +5,7 @@ import { ProjectsProvider } from './contexts/ProjectsContext'
 import { TimerPage } from './pages/TimerPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { HistoryPage } from './pages/HistoryPage'
+import { AnalysisPage } from './pages/AnalysisPage'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
                 <Route path="/" element={<TimerPage />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
+                <Route path="/analysis" element={<AnalysisPage />} />
               </Routes>
             </main>
           </div>

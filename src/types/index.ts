@@ -36,3 +36,12 @@ export interface Task {
   project_id: string
   rating: number | null
 }
+
+export interface WeeklyAnalysis {
+  id: string
+  user_id: string
+  week_start: string
+  week_end: string
+  content: string
+  created_at: string
+}
