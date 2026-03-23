@@ -15,29 +15,17 @@ const defaultProps = {
   projects: mockProjects,
   selectedProjectId: null as string | null,
   onProjectChange: vi.fn(),
-  isRunning: false,
   onStart: vi.fn(),
-  onStop: vi.fn(),
   error: null,
 }
 
 describe('TimerControls', () => {
-  it('renders Start button when not running', () => {
+  it('renders Start button', () => {
     render(<TimerControls {...defaultProps} />)
     expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument()
   })
 
-  it('renders Stop button when running', () => {
-    render(<TimerControls {...defaultProps} isRunning={true} />)
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
-  })
-
-  it('disables input when running', () => {
-    render(<TimerControls {...defaultProps} isRunning={true} />)
-    expect(screen.getByPlaceholderText('Nom de la tâche...')).toBeDisabled()
-  })
-
-  it('enables input when not running', () => {
+  it('input is always enabled', () => {
     render(<TimerControls {...defaultProps} />)
     expect(screen.getByPlaceholderText('Nom de la tâche...')).toBeEnabled()
   })
@@ -51,25 +39,9 @@ describe('TimerControls', () => {
     expect(onStart).toHaveBeenCalledOnce()
   })
 
-  it('does not call onStart on Enter when running', async () => {
-    const onStart = vi.fn()
-    render(<TimerControls {...defaultProps} onStart={onStart} isRunning={true} />)
-    const input = screen.getByPlaceholderText('Nom de la tâche...')
-    await userEvent.click(input)
-    await userEvent.keyboard('{Enter}')
-    expect(onStart).not.toHaveBeenCalled()
-  })
-
   it('displays error message', () => {
     render(<TimerControls {...defaultProps} error="Something went wrong" />)
     expect(screen.getByText('Something went wrong')).toBeInTheDocument()
-  })
-
-  it('calls onStop when Stop button is clicked', async () => {
-    const onStop = vi.fn()
-    render(<TimerControls {...defaultProps} isRunning={true} onStop={onStop} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
-    expect(onStop).toHaveBeenCalledOnce()
   })
 
   it('has maxLength attribute on input', () => {
@@ -88,9 +60,9 @@ describe('TimerControls', () => {
     expect(screen.getByText('Projet B')).toBeInTheDocument()
   })
 
-  it('disables project selector when running', () => {
-    render(<TimerControls {...defaultProps} isRunning={true} selectedProjectId="p1" />)
+  it('project selector is always enabled', () => {
+    render(<TimerControls {...defaultProps} selectedProjectId="p1" />)
     const select = screen.getByRole('combobox')
-    expect(select).toBeDisabled()
+    expect(select).toBeEnabled()
   })
 })

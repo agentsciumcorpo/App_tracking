@@ -1,28 +1,28 @@
-import { useTimer } from '../hooks/useTimer'
+import { useTimers } from '../hooks/useTimers'
 import { useProjectsContext } from '../contexts/ProjectsContext'
-import { TimerDisplay } from '../components/timer/TimerDisplay'
 import { TimerControls } from '../components/timer/TimerControls'
+import { ActiveTimersList } from '../components/timer/ActiveTimersList'
 import { RatingModal } from '../components/ui/RatingModal'
 
 export function TimerPage() {
   const {
+    timers,
     taskName,
     setTaskName,
     projectId,
     setProjectId,
-    isRunning,
-    elapsedSeconds,
     startTimer,
     stopTimer,
-    pendingStop,
     confirmStop,
+    cancelStop,
     error,
     loading,
-  } = useTimer()
+    hasPendingStop,
+  } = useTimers()
 
   const { projects, loading: projectsLoading } = useProjectsContext()
 
-  const activeProject = projects.find((p) => p.id === projectId) ?? null
+  const pendingTimer = timers.find((t) => t.pendingStop)
 
   if (loading || projectsLoading) {
     return (
@@ -35,19 +35,28 @@ export function TimerPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-10 bg-zinc-900 px-4">
       <h1 className="text-3xl font-bold text-zinc-100">Timer</h1>
-      <TimerDisplay elapsedSeconds={elapsedSeconds} isRunning={isRunning} activeProject={activeProject} />
       <TimerControls
         taskName={taskName}
         onTaskNameChange={setTaskName}
         projects={projects}
         selectedProjectId={projectId}
         onProjectChange={setProjectId}
-        isRunning={isRunning}
         onStart={startTimer}
-        onStop={stopTimer}
         error={error}
       />
-      {pendingStop && <RatingModal onSubmit={confirmStop} />}
+      <ActiveTimersList
+        timers={timers.filter((t) => !t.pendingStop)}
+        projects={projects}
+        onStop={stopTimer}
+        hasPendingStop={hasPendingStop}
+      />
+      {pendingTimer && (
+        <RatingModal
+          onSubmit={(rating) => confirmStop(pendingTimer.id, rating)}
+          onCancel={() => cancelStop(pendingTimer.id)}
+          taskName={pendingTimer.taskName}
+        />
+      )}
     </div>
   )
 }

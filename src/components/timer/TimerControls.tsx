@@ -8,9 +8,7 @@ interface TimerControlsProps {
   projects: Project[]
   selectedProjectId: string | null
   onProjectChange: (projectId: string) => void
-  isRunning: boolean
   onStart: () => void
-  onStop: () => void
   error: string | null
 }
 
@@ -20,9 +18,7 @@ export const TimerControls = memo(function TimerControls({
   projects,
   selectedProjectId,
   onProjectChange,
-  isRunning,
   onStart,
-  onStop,
   error,
 }: TimerControlsProps) {
   return (
@@ -32,15 +28,14 @@ export const TimerControls = memo(function TimerControls({
         value={taskName}
         onChange={(e) => onTaskNameChange(e.target.value)}
         placeholder="Nom de la tâche..."
-        disabled={isRunning}
         maxLength={200}
         className={`w-full rounded-lg border bg-zinc-800 px-4 py-3 text-zinc-100 placeholder-zinc-500 outline-none transition-colors ${
-          error && !isRunning
+          error
             ? 'border-red-500 focus:border-red-400'
             : 'border-zinc-700 focus:border-emerald-500'
-        } disabled:opacity-50 disabled:cursor-not-allowed`}
+        }`}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !isRunning) onStart()
+          if (e.key === 'Enter') onStart()
         }}
       />
 
@@ -48,8 +43,8 @@ export const TimerControls = memo(function TimerControls({
         projects={projects}
         selectedId={selectedProjectId}
         onChange={onProjectChange}
-        disabled={isRunning}
-        hasError={!!error && !selectedProjectId && !isRunning}
+        disabled={false}
+        hasError={!!error && !selectedProjectId}
       />
 
       {error && (
@@ -57,14 +52,10 @@ export const TimerControls = memo(function TimerControls({
       )}
 
       <button
-        onClick={isRunning ? onStop : onStart}
-        className={`w-full rounded-lg px-6 py-3 text-lg font-semibold transition-colors ${
-          isRunning
-            ? 'bg-red-600 hover:bg-red-500 text-white'
-            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-        }`}
+        onClick={onStart}
+        className="w-full rounded-lg px-6 py-3 text-lg font-semibold transition-colors bg-emerald-600 hover:bg-emerald-500 text-white"
       >
-        {isRunning ? 'Stop' : 'Start'}
+        Start
       </button>
     </div>
   )

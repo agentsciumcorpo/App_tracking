@@ -10,13 +10,12 @@ L'utilisateur DOIT pouvoir saisir un nom de tâche dans un champ texte avant de 
 - **THEN** le timer ne démarre pas et le champ est mis en évidence
 
 ### Requirement: Démarrage du chronomètre
-L'utilisateur DOIT pouvoir démarrer un chronomètre en saisissant un nom de tâche, sélectionnant un projet, et cliquant sur Start. Le nom DOIT être non vide et de 200 caractères maximum. Un projet DOIT être sélectionné. Un seul timer peut être actif à la fois par utilisateur.
+L'utilisateur DOIT pouvoir démarrer un chronomètre en saisissant un nom de tâche, sélectionnant un projet, et cliquant sur Start. Le nom DOIT être non vide et de 200 caractères maximum. Un projet DOIT être sélectionné. Plusieurs timers peuvent être actifs simultanément par utilisateur.
 
 #### Scenario: Démarrage réussi avec projet
 - **WHEN** l'utilisateur a saisi un nom de tâche, sélectionné un projet, et clique sur Start
-- **THEN** le chronomètre démarre et affiche le temps écoulé en temps réel
-- **THEN** le bouton Start devient un bouton Stop
-- **THEN** le champ de saisie du nom est désactivé
+- **THEN** le chronomètre démarre et s'ajoute à la liste des timers actifs
+- **THEN** le formulaire revient à l'état initial (champ vide) pour permettre de démarrer un autre timer
 - **THEN** le timer actif avec `project_id` est persisté dans `active_timers`
 
 #### Scenario: Démarrage sans projet sélectionné
@@ -48,17 +47,6 @@ L'utilisateur DOIT pouvoir arrêter le chronomètre en cliquant sur un bouton St
 - **THEN** la tâche est enregistrée dans `tasks` avec : nom, durée, timestamps, project_id, et rating (ou NULL)
 - **THEN** l'entrée dans `active_timers` est supprimée
 - **THEN** le formulaire revient à l'état initial (champ vide, bouton Start)
-
-### Requirement: Une seule tâche active à la fois
-Le système DOIT garantir qu'un seul chronomètre est actif par utilisateur à tout moment.
-
-#### Scenario: Tentative de double démarrage
-- **WHEN** un chronomètre est déjà en cours
-- **THEN** le bouton Start n'est pas disponible (remplacé par Stop)
-
-#### Scenario: Contrainte en base de données
-- **WHEN** une entrée existe dans `active_timers` pour un `user_id`
-- **THEN** aucune autre entrée ne peut être insérée pour ce même `user_id`
 
 ### Requirement: Persistance du timer actif
 Le timer actif DOIT survivre à un rafraîchissement de la page.
