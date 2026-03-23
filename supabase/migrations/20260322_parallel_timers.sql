@@ -3,10 +3,12 @@
 -- 1. Drop the unique constraint on user_id in active_timers
 --    (allows multiple rows per user)
 ALTER TABLE active_timers DROP CONSTRAINT IF EXISTS active_timers_user_id_key;
+ALTER TABLE active_timers DROP CONSTRAINT IF EXISTS active_timers_user_id_unique;
 
 -- Also try index-based unique constraint name variants
 DROP INDEX IF EXISTS active_timers_user_id_key;
 DROP INDEX IF EXISTS active_timers_user_id_idx;
+DROP INDEX IF EXISTS active_timers_user_id_unique;
 
 -- 2. Replace complete_timer RPC to accept timer ID instead of finding by user_id
 CREATE OR REPLACE FUNCTION complete_timer(
